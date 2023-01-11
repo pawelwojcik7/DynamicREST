@@ -4,22 +4,16 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.support.GenericApplicationContext;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 import org.springframework.web.util.pattern.PathPatternParser;
 
-import javax.annotation.PostConstruct;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 
 // Rejestracja dynamicznego beana z dynamicznym endpointem
@@ -36,9 +30,9 @@ public class Register {
 
 
     @SneakyThrows
-    public void registerFileController(String path){
+    public void registerFileController(String path, String beanName){
 
-        FileDynamicController fileController = generator.generateFileController(); // wygenerowanie instancji klasy dynamicznego kontrollera
+        FileDynamicController fileController = generator.generateFileController(beanName); // wygenerowanie instancji klasy dynamicznego kontrollera
         context.registerBean(path, FileDynamicController.class, fileController); // zarejestrowanie singletonowego beana w kontekście springa
         RequestMappingInfo.BuilderConfiguration options = new RequestMappingInfo.BuilderConfiguration(); // konfiguracja request mappingu dynamicznego endpointu
         options.setPatternParser(new PathPatternParser());
@@ -49,9 +43,11 @@ public class Register {
                         .produces(MediaType.APPLICATION_JSON_VALUE) // typ zwracany
                         .build(),
                 fileController, // handler metody = dynamiczny bean
-                fileController.getClass().getMethod("receiveFile", MultipartFile.class) // metoda obsługująca mapping
+                fileController.getClass().getMethod("processFile", MultipartFile.class) // metoda obsługująca mapping
         );
         System.out.println("brake");
-
+    Arrays.stream(context.getBeanDefinitionNames())
+        .collect(Collectors.toList())
+        .forEach(System.out::println);
     }
 }

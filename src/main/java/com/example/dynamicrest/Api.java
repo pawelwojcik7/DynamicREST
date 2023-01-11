@@ -14,10 +14,10 @@ public class Api {
 
     private final Register register;
 
-    @PutMapping("/create/endpoint/{path}")
-    public ResponseEntity<?> createDynamicEndopint(@PathVariable(value = "path") String path) {
+    @PutMapping("/create/endpoint/{path}/{beanName}")
+    public ResponseEntity<?> createDynamicEndopint(@PathVariable(value = "path") String path, @PathVariable String beanName) {
 
-       register.registerFileController(path);
+       register.registerFileController(path, beanName);
         return ResponseEntity.ok().build();
     }
 }

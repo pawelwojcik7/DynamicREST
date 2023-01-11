@@ -1,6 +1,5 @@
 package com.example.dynamicrest;
 
-import com.fasterxml.jackson.core.filter.FilteringGeneratorDelegate;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +14,6 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.lang.reflect.Modifier;
 
 
@@ -27,13 +25,15 @@ public class Generator {
 
 
     private final ApplicationContext applicationContext;
+    private final BeanProvider beanProvider;
 
 
     @SneakyThrows
-    public FileDynamicController generateFileController() {
+    public FileDynamicController generateFileController(String beanName) {
 
         FileControllerMethodImplementation.fileService = applicationContext.getBean(FileService.class); // wstrzyknięcie beana do FileControllerMethodImplementation
-
+        BeanInterface beanInterface = beanProvider.getBean(beanName).get();
+        System.out.println(beanInterface.getClass());
 
         return new ByteBuddy() // nowa reprezentacja klasy
                 .subclass(FileDynamicController.class) // typ : FileDynamicController
@@ -41,12 +41,12 @@ public class Generator {
                 .annotateType(AnnotationDescription.Builder // oznaczenie klasy jako RestController
                         .ofType(RestController.class)
                         .build())
-                .defineMethod("receiveFile", String.class, Modifier.PUBLIC) // Dynamiczne zdefiniowanie metody publiocznej o nazwie receiveFile, zwracającej typ String
+                .defineMethod("processFile", String.class, Modifier.PUBLIC) // Dynamiczne zdefiniowanie metody publiocznej o nazwie receiveFile, zwracającej typ String
                 .withParameter(MultipartFile.class, "file") // metoda przyjmuje jako parametr obiekt klasy MultipartFile o nazwie file
                 .annotateParameter(AnnotationDescription.Builder.ofType(RequestPart.class) // file oznaczony jest parametrem @RequestPart
                         .define("value", "file") // @RequestPart(value="file")
                         .build())
-                .intercept(MethodDelegation.to(FileControllerMethodImplementation.class))// odesłanie do implementacji metody receiveFile
+                .intercept(MethodDelegation.to(beanInterface))// odesłanie do implementacji metody receiveFile
                 .make()
                 .load(getClass().getClassLoader())
                 .getLoaded()
